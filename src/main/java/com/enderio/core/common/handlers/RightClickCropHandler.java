@@ -1,6 +1,7 @@
 package com.enderio.core.common.handlers;
 
 import java.util.List;
+import java.util.Random;
 
 import net.minecraft.block.Block;
 import net.minecraft.item.ItemStack;
@@ -48,7 +49,7 @@ public class RightClickCropHandler {
   private List<PlantInfo> plants = Lists.newArrayList();
 
   private PlantInfo currentPlant = null;
-
+  private static final Random rnd = new Random();
   public static final RightClickCropHandler INSTANCE = new RightClickCropHandler();
 
   private RightClickCropHandler() {
@@ -74,6 +75,9 @@ public class RightClickCropHandler {
             currentPlant = null;
             event.world.setBlockMetadataWithNotify(x, y, z, info.resetMeta, 3);
             event.setCanceled(true);
+            if(rnd.nextBoolean()){
+              event.entityPlayer.getHeldItem().damageItem(1, event.entityPlayer);
+            }
           }
           break;
         }
