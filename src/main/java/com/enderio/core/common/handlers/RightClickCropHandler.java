@@ -4,10 +4,13 @@ import java.util.List;
 import java.util.Random;
 
 import cofh.core.item.tool.ItemSickleAdv;
+import cofh.lib.util.helpers.MathHelper;
 import cofh.redstonearsenal.item.tool.ItemSickleRF;
 import net.minecraft.block.Block;
-import net.minecraft.item.Item;
+import net.minecraft.enchantment.Enchantment;
+import net.minecraft.enchantment.EnchantmentHelper;
 import net.minecraft.item.ItemStack;
+import net.minecraftforge.common.util.FakePlayer;
 import net.minecraftforge.event.entity.player.PlayerInteractEvent;
 import net.minecraftforge.event.entity.player.PlayerInteractEvent.Action;
 import net.minecraftforge.event.world.BlockEvent.HarvestDropsEvent;
@@ -67,34 +70,41 @@ public class RightClickCropHandler {
     int x = event.x, y = event.y, z = event.z;
     Block block = event.world.getBlock(x, y, z);
     int meta = event.world.getBlockMetadata(x, y, z);
-    Item item = event.entityPlayer.getHeldItem().getItem();
-    int range = 3;
-    if (ConfigHandler.allowCropRC && event.action == Action.RIGHT_CLICK_BLOCK && event.entityPlayer.getHeldItem() != null && item.getUnlocalizedName().toLowerCase().contains("sickle")) {
+    ItemStack stack = event.entityPlayer.getHeldItem();
+    if (ConfigHandler.allowCropRC && event.action == Action.RIGHT_CLICK_BLOCK && !(event.entityPlayer instanceof FakePlayer) && stack != null && stack.getUnlocalizedName().toLowerCase().contains("sickle")) {
       for (PlantInfo info : plants) {
         if (info.blockInst == block && meta == info.meta) {
           if (event.world.isRemote) {
             event.entityPlayer.swingItem();
           } else {
-            if (event.entityPlayer.getHeldItem().getItem() instanceof ItemSickleAdv) {
+            int range = 3;
+            boolean specialDurability = false;
+
+            //Thermal Foundation Sickle
+            if (stack.getItem() instanceof ItemSickleAdv) {
               ItemSickleAdv Sickle = (ItemSickleAdv) event.entityPlayer.getHeldItem().getItem();
               range = Sickle.radius;
             }
-            if (event.entityPlayer.getHeldItem().getItem() instanceof ItemSickleRF) {
-              ItemSickleRF Sickle = (ItemSickleRF) event.entityPlayer.getHeldItem().getItem();
-              range = (Sickle.isEmpowered(event.entityPlayer.getHeldItem()) ? 2 : 0) + Sickle.radius;
+            //Redstone Arsenal Sickle
+            if (stack.getItem() instanceof ItemSickleRF) {
+              specialDurability = true;
+              if (!canDoEnergyOperations(stack))
+                range = 1;
             }
-            for (int i = x - range; i <= x + range; i++) {
-              for (int k = z - range; k <= z + range; k++) {
-                currentPlant = info;
-                block.dropBlockAsItem(event.world, i, y, k, meta, 0);
-                currentPlant = null;
-                event.world.setBlockMetadataWithNotify(i, y, k, info.resetMeta, 3);
-                event.setCanceled(true);
-                event.entityPlayer.getHeldItem().damageItem(1, event.entityPlayer);
+              for (int i = x - range; i <= x + range; i++) {
+                for (int k = z - range; k <= z + range; k++) {
+                  currentPlant = info;
+                  block.dropBlockAsItem(event.world, i, y, k, meta, 0);
+                  currentPlant = null;
+                  event.world.setBlockMetadataWithNotify(i, y, k, info.resetMeta, 3);
+                  event.setCanceled(true);
+                }
               }
+            if (!specialDurability) {
+              event.entityPlayer.getHeldItem().damageItem(1, event.entityPlayer);
             }
-            break;
           }
+          break;
         }
       }
     }
@@ -112,5 +122,22 @@ public class RightClickCropHandler {
         }
       }
     }
+  }
+
+  public boolean canDoEnergyOperations(ItemStack stack){
+    ItemSickleRF sickle = (ItemSickleRF) stack.getItem();
+
+    //RF Math variables
+    boolean isEmpowered = sickle.isEmpowered(stack);
+    int unbreakingLevel = MathHelper.clamp((EnchantmentHelper.getEnchantmentLevel(Enchantment.unbreaking.effectId, stack)), 0, 4);
+    int costRF = sickle.energyPerUse * (5 - unbreakingLevel) / 5;
+
+    if (sickle.getEnergyStored(stack) > costRF)
+    {
+      sickle.extractEnergy(stack, isEmpowered ? sickle.energyPerUseCharged * (5 - unbreakingLevel) / 5 : sickle.energyPerUse * (5 - unbreakingLevel) / 5, false);
+      return true;
+    }
+    else
+      return false;
   }
 }
