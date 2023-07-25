@@ -45,10 +45,10 @@ import cpw.mods.fml.common.event.FMLServerStartingEvent;
 @Mod(modid = EnderCore.MODID, name = EnderCore.NAME, version = EnderCore.VERSION, dependencies = "after:ttCore", guiFactory = "com.enderio.core.common.config.BaseConfigFactory")
 public class EnderCore implements IEnderMod {
 
-  public static final String MODID = "endercore";
-  public static final String NAME = "EnderCore";
-  public static final String BASE_PACKAGE = "com.enderio";
-  public static final String VERSION = "@VERSION@";
+  public static final String MODID = Tags.MODID;
+  public static final String NAME = Tags.MODNAME;
+  public static final String BASE_PACKAGE = Tags.GROUPNAME;
+  public static final String VERSION = Tags.VERSION;
 
   public static final Logger logger = LogManager.getLogger(NAME);
   public static final Lang lang = new Lang(MODID);
