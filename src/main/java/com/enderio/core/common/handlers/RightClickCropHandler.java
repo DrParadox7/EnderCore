@@ -3,7 +3,10 @@ package com.enderio.core.common.handlers;
 import java.util.List;
 import java.util.Random;
 
+import cofh.core.item.tool.ItemSickleAdv;
+import cofh.redstonearsenal.item.tool.ItemSickleRF;
 import net.minecraft.block.Block;
+import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraftforge.event.entity.player.PlayerInteractEvent;
 import net.minecraftforge.event.entity.player.PlayerInteractEvent.Action;
@@ -64,22 +67,34 @@ public class RightClickCropHandler {
     int x = event.x, y = event.y, z = event.z;
     Block block = event.world.getBlock(x, y, z);
     int meta = event.world.getBlockMetadata(x, y, z);
-    if (ConfigHandler.allowCropRC && event.action == Action.RIGHT_CLICK_BLOCK && event.entityPlayer.isSneaking() && event.entityPlayer.getHeldItem() != null && event.entityPlayer.getHeldItem().getUnlocalizedName().toLowerCase().contains("sickle") ) {
+    Item item = event.entityPlayer.getHeldItem().getItem();
+    int range = 3;
+    if (ConfigHandler.allowCropRC && event.action == Action.RIGHT_CLICK_BLOCK && event.entityPlayer.getHeldItem() != null && item.getUnlocalizedName().toLowerCase().contains("sickle")) {
       for (PlantInfo info : plants) {
         if (info.blockInst == block && meta == info.meta) {
           if (event.world.isRemote) {
             event.entityPlayer.swingItem();
           } else {
-            currentPlant = info;
-            block.dropBlockAsItem(event.world, x, y, z, meta, 0);
-            currentPlant = null;
-            event.world.setBlockMetadataWithNotify(x, y, z, info.resetMeta, 3);
-            event.setCanceled(true);
-            if(rnd.nextBoolean()){
-              event.entityPlayer.getHeldItem().damageItem(1, event.entityPlayer);
+            if (event.entityPlayer.getHeldItem().getItem() instanceof ItemSickleAdv) {
+              ItemSickleAdv Sickle = (ItemSickleAdv) event.entityPlayer.getHeldItem().getItem();
+              range = Sickle.radius;
             }
+            if (event.entityPlayer.getHeldItem().getItem() instanceof ItemSickleRF) {
+              ItemSickleRF Sickle = (ItemSickleRF) event.entityPlayer.getHeldItem().getItem();
+              range = (Sickle.isEmpowered(event.entityPlayer.getHeldItem()) ? 2 : 0) + Sickle.radius;
+            }
+            for (int i = x - range; i <= x + range; i++) {
+              for (int k = z - range; k <= z + range; k++) {
+                currentPlant = info;
+                block.dropBlockAsItem(event.world, i, y, k, meta, 0);
+                currentPlant = null;
+                event.world.setBlockMetadataWithNotify(i, y, k, info.resetMeta, 3);
+                event.setCanceled(true);
+                event.entityPlayer.getHeldItem().damageItem(1, event.entityPlayer);
+              }
+            }
+            break;
           }
-          break;
         }
       }
     }
