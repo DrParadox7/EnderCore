@@ -95,11 +95,14 @@ public class RightClickCropHandler {
                         }
                         for (int i = x - range; i <= x + range; i++) {
                             for (int k = z - range; k <= z + range; k++) {
-                                currentPlant = info;
-                                block.dropBlockAsItem(event.world, i, y, k, meta, 0);
-                                currentPlant = null;
-                                event.world.setBlockMetadataWithNotify(i, y, k, info.resetMeta, 3);
-                                event.setCanceled(true);
+                                if (info.blockInst == event.world.getBlock(i, y, k)
+                                        && event.world.getBlockMetadata(i, y, k) == info.meta) {
+                                    currentPlant = info;
+                                    block.dropBlockAsItem(event.world, i, y, k, meta, 0);
+                                    currentPlant = null;
+                                    event.world.setBlockMetadataWithNotify(i, y, k, info.resetMeta, 3);
+                                    event.setCanceled(true);
+                                }
                             }
                         }
                         if (!specialDurability) {
